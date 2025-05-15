@@ -4,6 +4,7 @@ provider "aws" {
 
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
+  version         = "~> 20.0.0"
   cluster_name    = "nodejs-eks-cluster"
   cluster_version = "1.29"
   subnet_ids     = module.vpc.private_subnets
@@ -22,6 +23,7 @@ module "eks" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0.0"
   name    = "nodejs-vpc"
   cidr    = "10.0.0.0/16"
   azs     = ["ap-south-1a", "ap-south-1b"]
