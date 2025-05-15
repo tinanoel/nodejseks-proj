@@ -38,8 +38,11 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Terraform plan
+        run: terraform plan
+
       - name: Terraform destroy
-        run: terraform destroy -auto-approve
+        run: terraform destroy
       
   build-push-deploy:
     name: Build and Deploy Node App to EKS
