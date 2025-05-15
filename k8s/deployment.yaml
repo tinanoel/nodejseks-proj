@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: node-app
-        image: your-dockerhub-username/node-app:latest
+        image: 490004621617.dkr.ecr.ap-south-1.amazonaws.com/mydemorepo:latest
         ports:
         - containerPort: 3000
