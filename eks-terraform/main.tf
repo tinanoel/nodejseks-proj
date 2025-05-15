@@ -5,11 +5,11 @@ provider "aws" {
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   cluster_name    = "nodejs-eks-cluster"
-  cluster_version = "1.27"
-  subnets         = module.vpc.private_subnets
-  vpc_id          = module.vpc.vpc_id
+  cluster_version = "1.29"
+  subnet_ids     = module.vpc.private_subnets
+  vpc_id          = module.vpc.name
 
-  manage_aws_auth = true
+  #manage_aws_auth = true
   eks_managed_node_groups = {
     node_group = {
       desired_capacity = 2
