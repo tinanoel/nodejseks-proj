@@ -2,125 +2,147 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_eks_cluster" "example" {
-  name = "example"
+module "eks" {
+  source = "terraform-aws-modules/eks/aws"
 
-  access_config {
-    authentication_mode = "API"
-  }
+  cluster_name                    = "my-cluster"
+  cluster_version                 = "1.21"
+  cluster_endpoint_private_access = true
+  cluster_endpoint_public_access  = true
 
-  role_arn = aws_iam_role.cluster.arn
-  version  = "1.31"
-
-  bootstrap_self_managed_addons = false
-
-  compute_config {
-    enabled       = true
-    node_pools    = ["general-purpose"]
-    node_role_arn = aws_iam_role.node.arn
-  }
-
-  kubernetes_network_config {
-    elastic_load_balancing {
-      enabled = true
+  cluster_addons = {
+    coredns = {
+      resolve_conflicts = "OVERWRITE"
+    }
+    kube-proxy = {}
+    vpc-cni = {
+      resolve_conflicts = "OVERWRITE"
     }
   }
 
-  storage_config {
-    block_storage {
-      enabled = true
-    }
+  cluster_encryption_config = [{
+    provider_key_arn = "ac01234b-00d9-40f6-ac95-e42345f78b00"
+    resources        = ["secrets"]
+  }]
+
+  vpc_id     = "vpc-0aa3b5020d63663a0"
+  subnet_ids = ["subnet-0d3d8392a0ffd9fa7", "subnet-0474e8d2c87f43a8d"]
+
+  # Self Managed Node Group(s)
+  self_managed_node_group_defaults = {
+    instance_type                          = "m6i.large"
+    update_launch_template_default_version = true
+    iam_role_additional_policies           = ["arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"]
   }
 
-  vpc_config {
-    endpoint_private_access = true
-    endpoint_public_access  = true
+  self_managed_node_groups = {
+    one = {
+      name = "spot-1"
 
-    subnet_ids = [
-      aws_subnet.az1.id,
-      aws_subnet.az2.id,
-      aws_subnet.az3.id,
-    ]
-  }
+      public_ip    = true
+      max_size     = 5
+      desired_size = 2
 
-  # Ensure that IAM Role permissions are created before and deleted
-  # after EKS Cluster handling. Otherwise, EKS will not be able to
-  # properly delete EKS managed EC2 infrastructure such as Security Groups.
-  depends_on = [
-    aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy,
-    aws_iam_role_policy_attachment.cluster_AmazonEKSComputePolicy,
-    aws_iam_role_policy_attachment.cluster_AmazonEKSBlockStoragePolicy,
-    aws_iam_role_policy_attachment.cluster_AmazonEKSLoadBalancingPolicy,
-    aws_iam_role_policy_attachment.cluster_AmazonEKSNetworkingPolicy,
-  ]
-}
-
-resource "aws_iam_role" "node" {
-  name = "eks-auto-node-example"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = ["sts:AssumeRole"]
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
+      use_mixed_instances_policy = true
+      mixed_instances_policy = {
+        instances_distribution = {
+          on_demand_base_capacity                  = 0
+          on_demand_percentage_above_base_capacity = 10
+          spot_allocation_strategy                 = "capacity-optimized"
         }
-      },
-    ]
-  })
-}
 
-resource "aws_iam_role_policy_attachment" "node_AmazonEKSWorkerNodeMinimalPolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodeMinimalPolicy"
-  role       = aws_iam_role.node.name
-}
-
-resource "aws_iam_role_policy_attachment" "node_AmazonEC2ContainerRegistryPullOnly" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"
-  role       = aws_iam_role.node.name
-}
-
-resource "aws_iam_role" "cluster" {
-  name = "eks-cluster-example"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "sts:AssumeRole",
-          "sts:TagSession"
+        override = [
+          {
+            instance_type     = "m5.large"
+            weighted_capacity = "1"
+          },
+          {
+            instance_type     = "m6i.large"
+            weighted_capacity = "2"
+          },
         ]
-        Effect = "Allow"
-        Principal = {
-          Service = "eks.amazonaws.com"
+      }
+
+      pre_bootstrap_user_data = <<-EOT
+      echo "foo"
+      export FOO=bar
+      EOT
+
+      bootstrap_extra_args = "--kubelet-extra-args '--node-labels=node.kubernetes.io/lifecycle=spot'"
+
+      post_bootstrap_user_data = <<-EOT
+      cd /tmp
+      sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+      sudo systemctl enable amazon-ssm-agent
+      sudo systemctl start amazon-ssm-agent
+      EOT
+    }
+  }
+
+  # EKS Managed Node Group(s)
+  eks_managed_node_group_defaults = {
+    ami_type               = "AL2_x86_64"
+    disk_size              = 50
+    instance_types         = ["m6i.large", "m5.large", "m5n.large", "m5zn.large"]
+    vpc_security_group_ids = [aws_security_group.additional.id]
+  }
+
+  eks_managed_node_groups = {
+    blue = {}
+    green = {
+      min_size     = 1
+      max_size     = 10
+      desired_size = 1
+
+      instance_types = ["t3.large"]
+      capacity_type  = "SPOT"
+      labels = {
+        Environment = "test"
+        GithubRepo  = "terraform-aws-eks"
+        GithubOrg   = "terraform-aws-modules"
+      }
+      taints = {
+        dedicated = {
+          key    = "dedicated"
+          value  = "gpuGroup"
+          effect = "NO_SCHEDULE"
         }
-      },
-    ]
-  })
-}
+      }
+      tags = {
+        ExtraTag = "example"
+      }
+    }
+  }
 
-resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.cluster.name
-}
+  # Fargate Profile(s)
+  fargate_profiles = {
+    default = {
+      name = "default"
+      selectors = [
+        {
+          namespace = "kube-system"
+          labels = {
+            k8s-app = "kube-dns"
+          }
+        },
+        {
+          namespace = "default"
+        }
+      ]
 
-resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSComputePolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSComputePolicy"
-  role       = aws_iam_role.cluster.name
-}
+      tags = {
+        Owner = "test"
+      }
 
-resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSBlockStoragePolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy"
-  role       = aws_iam_role.cluster.name
-}
+      timeouts = {
+        create = "20m"
+        delete = "20m"
+      }
+    }
+  }
 
-resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSLoadBalancingPolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy"
-  role       = aws_iam_role.cluster.name
-}
-
-resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSNetworkingPolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy"
-  role       = aws_iam_role.cluster.name
+  tags = {
+    Environment = "dev"
+    Terraform   = "true"
+  }
 }
