@@ -8,7 +8,7 @@ module "eks" {
   cluster_name    = "nodejs-eks-cluster"
   cluster_version = "1.29"
   private_subnet_ids     = module.vpc.private_subnets
-  public_subnet_ids  = module.vpc.public_subnets
+  
   
   vpc_id          = module.vpc.name
 
