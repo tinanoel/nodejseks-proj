@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_eks_cluster" "example" {
-  name = "test-cluster"
+  name = "example"
 
   access_config {
     authentication_mode = "API"
