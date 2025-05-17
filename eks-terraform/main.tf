@@ -28,9 +28,9 @@ module "eks" {
   #control_plane_subnet_ids = ["subnet-xyzde987", "subnet-slkjf456", "subnet-qeiru789"]
 
   # EKS Managed Node Group(s)
-  #eks_managed_node_group_defaults = {
-    #instance_types = ["t3.medium", "t3.medium", "t3.medium", "t3.medium"]
-  #}
+  eks_managed_node_group_defaults = {
+    instance_types = ["t3.medium", "t3.medium", "t3.medium", "t3.medium"]
+  }
 
   eks_managed_node_groups = {
     example = {
