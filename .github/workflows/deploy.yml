@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  CLUSTER_NAME: nodejs-eks-cluster
+  CLUSTER_NAME: sample
   ECR_REPO_NAME: node-repo
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
   IMAGE_TAG: latest
