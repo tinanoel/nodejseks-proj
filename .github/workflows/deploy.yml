@@ -8,45 +8,45 @@ on:
 env:
   AWS_REGION: us-east-1
   CLUSTER_NAME: nodejs-eks-cluster
-  ECR_REPO_NAME: noderepo
+  ECR_REPO_NAME: node-repo
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
   IMAGE_TAG: latest
 
 jobs:
-  terraform:
-    name: Provision EKS Cluster
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: eks-terraform
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+  #terraform:
+    #name: Provision EKS Cluster
+    #runs-on: ubuntu-latest
+    #defaults:
+      #run:
+        #working-directory: eks-terraform
+    #steps:
+      #- name: Checkout
+      #  uses: actions/checkout@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.3.2
+      #- name: Setup Terraform
+      #  uses: hashicorp/setup-terraform@v2
+      #  with:
+      #    terraform_version: 1.3.2
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+      #- name: Configure AWS Credentials
+      #  uses: aws-actions/configure-aws-credentials@v2
+      #  with:
+      #    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #    aws-region: ${{ env.AWS_REGION }}
 
-      - name: Terraform Init
-        run: terraform init
+      #- name: Terraform Init
+      # run: terraform init
 
-      - name: Terraform plan
-        run: terraform plan
+      #- name: Terraform plan
+      #  run: terraform plan
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
+      #- name: Terraform Apply
+      #  run: terraform apply -auto-approve
       
   build-push-deploy:
     name: Build and Deploy Node App to EKS
-    needs: terraform
+    #needs: terraform
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
