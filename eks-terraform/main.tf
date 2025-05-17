@@ -6,7 +6,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name    = "my-cluster"
+  cluster_name    = "example"
   cluster_version = "1.31"
 
   bootstrap_self_managed_addons = false
