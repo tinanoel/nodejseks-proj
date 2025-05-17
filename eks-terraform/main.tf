@@ -7,7 +7,9 @@ module "eks" {
   version         = "~> 20.0.0"
   cluster_name    = "nodejs-eks-cluster"
   cluster_version = "1.29"
-  subnet_ids     = module.vpc.private_subnets
+  private_subnet_ids     = module.vpc.private_subnets
+  public_subnet_ids  = module.vpc.public_subnets
+  
   vpc_id          = module.vpc.name
 
   #manage_aws_auth = true
